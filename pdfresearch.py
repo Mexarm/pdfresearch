@@ -12,16 +12,33 @@ from pdfminer.pdfinterp import PDFResourceManager
 from pdfminer.pdfpage import PDFPage
 from pdfminer.layout import LAParams
 
-EXAMPLE_USER_MODULE = r"""import re
+EXAMPLE_USER_MODULE = r"""
+import re
 
 from research import Search
 
+# search is a list of Search objects
 search = [
-    Search('P1',
+    Search('P1',  # this is the label of this search
+
+           # regular expresion capture groups are important to extract information,
+           # capture groups en regular expresion are the values enclosed in (),
+           #  you can practice on http://pythex.org
            r'(\d{5}|\d{4}).*Número de póliza\n(\w{5}\d{10})',
-           flags=re.MULTILINE | re.DOTALL,
+
+           flags=re.MULTILINE | re.DOTALL,  # optional: flags to pass to re.search
+
+           # optional if you want to store a found value in a global store, this value can be used later on other search output
+           # { 'your-key' : lambda groups: groups[index]}
+           # then it can be used in other search like this self.context['your-key']
+
            store_actions={'p1_poliza': lambda grps: grps[1]},
+
+           # optional specify how to build the output csv row
+           # in this case the label, filename, page, and 2 values captured by the regular expresion are used
            output_map=lambda self: (self.label, self.context['file'], self.context['page'], self.groups[1], self.groups[0])),
+
+    # more Searchs!!!
     Search('P1',
            r'.*Número de póliza\n(\w{5}\d{10})',
            flags=re.MULTILINE | re.DOTALL,
@@ -36,8 +53,10 @@ search = [
            flags=re.MULTILINE,
            output_map=lambda self: (self.label, self.context['file'], self.context['page'], self.groups[0], '')),
     Search('P4',
+           # no capture groups specified
            r'Contacto\nReporte de siniestro\:',
            flags=re.MULTILINE,
+           # self.context['p1_poliza'] is the value stored in search P1
            output_map=lambda self: (self.label, self.context['file'], self.context['page'], self.context['p1_poliza'], '')),
 ]
 """
@@ -94,6 +113,8 @@ def parsed_args():
         with open(args.generate_usrmodule, 'w') as handle:
             handle.write(EXAMPLE_USER_MODULE)
         parser.exit()
+    elif args.text_output and args.input:
+        return args
     elif not (args.input and args.user_module):
         parser.error('positional arguments required [input] [user_module]')
     return args
@@ -103,9 +124,12 @@ def main():
     args = parsed_args()
     of = args.output
     w = csv.writer(of, quotechar='"', quoting=csv.QUOTE_ALL)
-    usrmodule = __import__(args.user_module)
-    assert hasattr(usrmodule, 'search')
-    search = usrmodule.search
+    usrmodule = None
+    search = None
+    if args.user_module:
+        usrmodule = __import__(args.user_module)
+        assert hasattr(usrmodule, 'search')
+        search = usrmodule.search
     global_context = dict()
     for file in args.files:
         args.file = file
