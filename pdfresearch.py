@@ -13,47 +13,32 @@ from pdfminer.pdfpage import PDFPage
 from pdfminer.layout import LAParams
 
 EXAMPLE_USER_MODULE = r"""import re
-from os import path
 
-# search = [ ('LABEL', re.compile(r'regex',flags=...), lambda grps: grps <optional>) , .... ]
+from research import Search
 
 search = [
-    (
-        'P1',
-        re.compile(
-            r'(\d{5}|\d{4}).*Número de póliza\n(\w{5}\d{10})',
-            flags=re.MULTILINE | re.DOTALL
-        ),
-        lambda grps, args: (grps[1], grps[0], path.abspath(args.file))
-    ),
-    (
-        'P1',
-        re.compile(
-            r'().*Número de póliza\n(\w{5}\d{10})',
-            flags=re.MULTILINE | re.DOTALL),
-        lambda grps, args: (grps[1], grps[0], path.abspath(args.file))
-    ),
-    (
-        'P2',
-        re.compile(
-            r'vigencia establecida\.\nPóliza\:\s(\w{5}\d{10})',
-            flags=re.MULTILINE),
-        lambda grps, args: (grps[0], '', path.abspath(args.file))
-    ),
-    (
-        'P3',
-        re.compile(
-            r'CBNX\nPóliza\:\s\n(\w{5}\d{10})',
-            flags=re.MULTILINE),
-        lambda grps, args: (grps[0], '', path.abspath(args.file))
-    ),
-    (
-        'P4',
-        re.compile(
-            r'Contacto\nReporte de siniestro\:',
-            flags=re.MULTILINE),
-        lambda grps, args: (grps[0], '', path.abspath(args.file))
-    )
+    Search('P1',
+           r'(\d{5}|\d{4}).*Número de póliza\n(\w{5}\d{10})',
+           flags=re.MULTILINE | re.DOTALL,
+           store_actions={'p1_poliza': lambda grps: grps[1]},
+           output_map=lambda self: (self.label, self.context['file'], self.context['page'], self.groups[1], self.groups[0])),
+    Search('P1',
+           r'.*Número de póliza\n(\w{5}\d{10})',
+           flags=re.MULTILINE | re.DOTALL,
+           store_actions={'p1_poliza': lambda grps: grps[0]},
+           output_map=lambda self: (self.label, self.context['file'], self.context['page'], self.groups[0], '')),
+    Search('P2',
+           r'vigencia establecida\.\nPóliza\:\s(\w{5}\d{10})',
+           flags=re.MULTILINE,
+           output_map=lambda self: (self.label, self.context['file'], self.context['page'], self.groups[0], '')),
+    Search('P3',
+           r'CBNX\nPóliza\:\s\n(\w{5}\d{10})',
+           flags=re.MULTILINE,
+           output_map=lambda self: (self.label, self.context['file'], self.context['page'], self.groups[0], '')),
+    Search('P4',
+           r'Contacto\nReporte de siniestro\:',
+           flags=re.MULTILINE,
+           output_map=lambda self: (self.label, self.context['file'], self.context['page'], self.context['p1_poliza'], '')),
 ]
 """
 
@@ -118,16 +103,13 @@ def main():
     args = parsed_args()
     of = args.output
     w = csv.writer(of, quotechar='"', quoting=csv.QUOTE_ALL)
-    lastmatch = ()
     usrmodule = __import__(args.user_module)
     assert hasattr(usrmodule, 'search')
     search = usrmodule.search
+    global_context = dict()
     for file in args.files:
         args.file = file
         for pnum, txtpage in enumerate(convert_pdf_to_txt(file, args)):
-            label = None
-            match = None
-            res = None
             pageno = args.pagenos[pnum] if args.pagenos else pnum
 
             if args.text_output:
@@ -136,23 +118,20 @@ def main():
                 of.write(('-' * 10)+'\n')
                 of.write(txtpage)
             else:
-
-                for f in search:
-                    match = f[1].search(txtpage)
-                    if match:
-                        label = f[0]
-                        if match.groups():
-                            lastmatch = match
+                for s in search:
+                    context = dict(
+                        page=pageno,
+                        file=file,
+                        text=txtpage,
+                        args=args
+                    )
+                    context.update(global_context)
+                    s.search(txtpage, context=context)
+                    if not s.groups is None:
+                        if s.store_actions:
+                            global_context.update(s.get_store_values())
+                        w.writerow(s.output_map())
                         break
-
-                if match:
-                    if not match.groups():
-                        match = lastmatch
-                        lastmatch = ()
-
-                    res = f[-1](match.groups(), args) if hasattr(f[-1],
-                                                                 '__call__') else match.groups()
-                    w.writerow((pageno, label) + res)
 
 
 if __name__ == '__main__':
