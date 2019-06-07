@@ -17,13 +17,14 @@ first generate an example user module:
 $python pdfresearch.py --generate_usrmodule mysearch.py
 ```
 
-and can extract some text from the pdf with:
+and extract some text from the pdf with:
 
 ```
 $python pdfresearch.py <your pdf file>.pdf --text_output --maxpages 4
 ```
 
-now edit mysearch.py, adecuate it to your needs:
+now edit mysearch.py, adecuate it to your needs (use the text extracted in the previous step to create the regex):
+you can test your regular expresions using this [online tool](http://pythex.org)
 
 ```
 # search is a list of Search objects
@@ -54,6 +55,8 @@ and then run the search:
 $python pdfresearch.py <your pdf file>.pdf mysearch
 ```
 
+(note: not .py extension in user_module [mysearch])
+
 example output:
 
 ```
@@ -62,5 +65,3 @@ example output:
 "P3","my.pdf","2","XXXXX0000543308",""
 "P4","my.pdf","3","XXXXX0000543308",""
 ```
-
-(note: not .py extension in user_module [mysearch])
