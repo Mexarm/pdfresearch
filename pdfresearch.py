@@ -19,45 +19,34 @@ from research import Search
 
 # search is a list of Search objects
 search = [
-    Search('P1',  # this is the label of this search
+    Search('DEMOGRAFICO',  # this is the label of this search
 
-           # regular expresion capture groups are important to extract information,
-           # capture groups en regular expresion are the values enclosed in (),
-           #  you can practice on http://pythex.org
-           r'(\d{5}|\d{4}).*Número de póliza\n(\w{5}\d{10})',
+           # regex list, regular expresion capture groups are important to extract information,
+           # capture groups in regular expresion are the values enclosed in (),
+           #  you can test your patterns on http://pythex.org
+           # this regex match the text Apreciable <name>:\n\nBienvenido captures the name of the subject
+           [r'Apreciable\s(.*)\:\n\n\¡Bienvenido\!'],
 
-           flags=re.MULTILINE | re.DOTALL,  # optional: flags to pass to re.search
+           flags=re.MULTILINE,  # optional: flags to pass to re.search
 
-           # optional if you want to store a found value in a global store, this value can be used later on other search output
-           # { 'your-key' : lambda groups: groups[index]}
-           # then it can be used in other search like this self.context['your-key']
-
-           store_actions={'p1_poliza': lambda grps: grps[1]},
+           # optional if you want to store a found value in a global store, this value can be retrieved by any next Search instance
+           # like this self.context[key], key also can be a lambda expresion returning the key for example:
+           # store_actions = { lambda grps : grps[0][1] : lambda grps: grps[0][0]}
+           store_actions={'last_matched_name': lambda grps: grps[0][0]},
 
            # optional specify how to build the output csv row
            # in this case the label, filename, page, and 2 values captured by the regular expresion are used
-           output_map=lambda self: (self.label, self.context['file'], self.context['page'], self.groups[1], self.groups[0])),
-
-    # more Searchs!!!
-    Search('P1',
-           r'.*Número de póliza\n(\w{5}\d{10})',
-           flags=re.MULTILINE | re.DOTALL,
-           store_actions={'p1_poliza': lambda grps: grps[0]},
-           output_map=lambda self: (self.label, self.context['file'], self.context['page'], self.groups[0], '')),
-    Search('P2',
-           r'vigencia establecida\.\nPóliza\:\s(\w{5}\d{10})',
+           output_map=lambda self: (
+               self.label, self.context['file'], self.context['page'], self.groups[0][0], '')
+           ),
+    # another example
+    Search('POLIZA',
+           [r'NUMERO\sDE\sPOLIZA\n([A-Z0-9]+)\n', r'SEGURO\sDE\sHOSPITALIZACIÓN',
+            r'\n\n(.*)\n\w{4}\d{6}(?:[\w\d]{3}|\n)'],
            flags=re.MULTILINE,
-           output_map=lambda self: (self.label, self.context['file'], self.context['page'], self.groups[0], '')),
-    Search('P3',
-           r'CBNX\nPóliza\:\s\n(\w{5}\d{10})',
-           flags=re.MULTILINE,
-           output_map=lambda self: (self.label, self.context['file'], self.context['page'], self.groups[0], '')),
-    Search('P4',
-           # no capture groups specified
-           r'Contacto\nReporte de siniestro\:',
-           flags=re.MULTILINE,
-           # self.context['p1_poliza'] is the value stored in search P1
-           output_map=lambda self: (self.label, self.context['file'], self.context['page'], self.context['p1_poliza'], '')),
+           output_map=lambda self: (
+               self.label, self.context['file'], self.context['page'], self.groups[2][0], self.groups[0][0])
+           ),
 ]
 """
 
