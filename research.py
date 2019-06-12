@@ -63,9 +63,11 @@ class Search(object):
 
     def get_store_values(self):
         store = dict()
-        for k, fn in self.store_actions.items():
+        for k, v in self.store_actions.items():
             try:
-                store[k] = fn(self.groups)
+                kv = k(self.groups) if hasattr(k, '__call__') else k
+                vv = v(self.groups) if hasattr(v, '__call__') else v
+                store[kv] = vv
             except Exception as e:
-                store[k] = str(e)
+                store[self.label] = str(e)
         return store
