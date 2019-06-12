@@ -4,9 +4,9 @@ Search and extract text from PDF Files writes output to csv:
 
 ```
 usage: pdfresearch.py [-h] [-c CODEC]
-                      [--generate_usrmodule GENERATE_USRMODULE] [-o OUTPUT]
+                      [--generate-usermodule GENERATE_USRMODULE] [-o OUTPUT]
                       [--password PASSWORD] [--pagenos F [F ...]]
-                      [--maxpages MAXPAGES] [--text_output]
+                      [--maxpages MAXPAGES] [--extract-text]
                       [input] [user_module]
 pdfresearch.py: error: positional arguments required [input] [user_module]
 ```
@@ -14,13 +14,13 @@ pdfresearch.py: error: positional arguments required [input] [user_module]
 first generate an example user module:
 
 ```
-$python pdfresearch.py --generate_usrmodule mysearch.py
+$python pdfresearch.py --generate-usermodule mysearch.py
 ```
 
 and extract some text from the pdf with:
 
 ```
-$python pdfresearch.py <your pdf file>.pdf --text_output --maxpages 4
+$python pdfresearch.py <your pdf file>.pdf --extract-text --maxpages 4
 ```
 
 now edit mysearch.py, adecuate it to your needs (use the text extracted in the previous step to create the regex):

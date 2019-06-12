@@ -93,7 +93,7 @@ def parsed_args():
                         help="user module name (do not include .py)")
     parser.add_argument("-c", "--codec",
                         help="codec (default ascii)", default='ascii')
-    parser.add_argument("--generate_usrmodule",
+    parser.add_argument("--generate-usermodule",
                         help="generate a user module example in the specified file")
     parser.add_argument("-o", "--output", type=argparse.FileType('w'),
                         help="output file name (default: stdout)", default=sys.stdout)
@@ -103,17 +103,17 @@ def parsed_args():
                         help="lista de paginas", default=[])
     parser.add_argument('--maxpages', type=int,
                         help="maximo numero de paginas a procesar (default: 0 -todas las paginas-)", default=0)
-    parser.add_argument('--text_output', action='store_true',
-                        help='output page text and do not evaluates user expressions')
+    parser.add_argument('--extract-text', action='store_true',
+                        help='output page text and do not evaluate user expressions')
     args = parser.parse_args()
     if args.input:
         args.files = glob(path.expanduser(args.input))
 
-    if args.generate_usrmodule:
-        with open(args.generate_usrmodule, 'w') as handle:
+    if args.generate_usermodule:
+        with open(args.generate_usermodule, 'w') as handle:
             handle.write(EXAMPLE_USER_MODULE)
         parser.exit()
-    elif args.text_output and args.input:
+    elif args.extract_text and args.input:
         return args
     elif not (args.input and args.user_module):
         parser.error('positional arguments required [input] [user_module]')
@@ -136,7 +136,7 @@ def main():
         for pnum, txtpage in enumerate(convert_pdf_to_txt(file, args)):
             pageno = args.pagenos[pnum] if args.pagenos else pnum
 
-            if args.text_output:
+            if args.extract_text:
                 of.write(f'@file: {file}\n')
                 of.write(f'@page: {pageno}\n')
                 of.write(('-' * 10)+'\n')
