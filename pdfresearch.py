@@ -155,7 +155,9 @@ def main():
                         if s.store_actions:
                             global_context.update(s.get_store_values())
                         w.writerow(s.output_map())
+                        of.flush()
                         break
+    of.close()
 
 
 if __name__ == '__main__':

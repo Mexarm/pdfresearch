@@ -7,34 +7,43 @@ class PatternNotSpecified(Exception):
 
 class Search(object):
 
-    def __init__(self, label, pattern, flags=0, store_actions=None, output_map=lambda self: (self.label,) + self.groups):
+    def __init__(self, label, patterns, flags=0, store_actions=None, output_map=lambda self: (self.label,) + self.groups):
 
         self.__label = label
-        self.__pattern = pattern
+        self.__patterns = patterns
         self.__flags = flags
         self.__output_map = output_map
         self.__store_actions = store_actions
 
     def search(self, text, context={}):
         """ executes .search on the compiled regex, raises PatternNotSpecified if __pattern is Falsy  """
-        if not self.__pattern:
+        if not self.__patterns:
             raise PatternNotSpecified
-        if not hasattr(self, '_Search__regex'):
-            self.__regex = re.compile(self.__pattern, flags=self.__flags)
+        if not hasattr(self, '_Search__regexs'):
+            self.__regexs = [re.compile(p, flags=self.__flags)
+                             for p in self.__patterns]
         self.__context = context
-        self.__result = self.__regex.search(text)
-        return self.__result
+        # self.__results = [regex.search(text) for regex in self.__regexs]
+        self.__results = []
+        for regex in self.__regexs:
+            match = regex.search(text)
+            self.__results.append(match)
+            if not match:
+                break
+        # if not len(self.__results) == len(self.__patterns):
+        #     self.__results = [None]
+        return self.__results
 
     def __str__(self):
         return ','.join(self.output_map())
 
     def __repr__(self):
-        return f'<Search {self.__label!r} {self.__pattern!r} {self.__flags!r} {self.output_map()!r}>'
+        return f'<Search {self.__label!r} {self.__patterns!r} {self.__flags!r} {self.output_map()!r}>'
 
     @property
     def groups(self):
-        if hasattr(self, '_Search__result') and self.__result:
-            return self.__result.groups()
+        if hasattr(self, '_Search__results') and all(self.__results):
+            return [r.groups() for r in self.__results]
 
     @property
     def context(self):
